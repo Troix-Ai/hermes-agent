@@ -1,0 +1,37 @@
+name: Enviar a Hugging Face
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Instalar Git LFS
+        run: git lfs install
+
+      - name: Forzar envio a Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_URL: ${{ secrets.HF_SPACE_URL }}
+        run: |
+          # Extraer el usuario y el nombre del space desde la URL
+          SPACE_PATH=$(echo "$HF_URL" | sed 's|https://huggingface.co/spaces/||')
+          
+          # Configurar credenciales temporales de Git
+          git config --global user.email "deploy-bot@github.com"
+          git config --global user.name "Deploy Bot"
+          
+          # Añadir Hugging Face como destino remoto seguro usando el Token
+          git remote add hf https://root:$HF_TOKEN@huggingface.co/spaces/$SPACE_PATH
+          
+          # Forzar el envío de todo el código de Hermes Agent
+          git push --force hf main
+          
